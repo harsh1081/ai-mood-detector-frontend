@@ -1117,7 +1117,8 @@ function updateTypingStats() {
 // Call Python AI Backend for advanced analysis
 async function callAIBackend(facialData, typingData, voiceData) {
     try {
-        const response = await fetch('http://localhost:5000/api/analyze', {
+        const response = await fetch("https://ai-mood-detector-backend-production.up.railway.app/api/analyze")
+, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2758,4 +2759,5 @@ function startVisualizer() {
     
     draw();
 }
+
 
