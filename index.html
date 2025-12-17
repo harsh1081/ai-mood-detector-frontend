@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood & Stress Detector - AI Wellness</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@2.1.1/dist/face-landmarks-detection.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1><i class="fas fa-brain"></i> AI Mood & Stress Detector</h1>
+            <nav>
+                <button class="nav-btn active" data-page="detector"><i class="fas fa-vial"></i> Detector</button>
+                <button class="nav-btn" data-page="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+            </nav>
+        </header>
+
+        <!-- AI Guide -->
+        <div id="ai-guide" class="ai-guide">
+            <div class="guide-content">
+                <div class="guide-header">
+                    <i class="fas fa-robot"></i>
+                    <h3>AI Assistant</h3>
+                    <button class="close-guide" onclick="toggleGuide()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="guide-messages" id="guide-messages">
+                    <div class="guide-message">
+                        <i class="fas fa-robot"></i>
+                        <p>Welcome! I'll help you detect your mood and stress level. Click "Start Detection" to begin!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detector Page -->
+        <div id="detector-page" class="page active">
+            <div class="detection-panel">
+                <h2>Mood & Stress Analysis</h2>
+                
+                <!-- Simple Instructions -->
+                <div class="instructions">
+                    <p><i class="fas fa-info-circle"></i> <strong>How it works:</strong> Click Start, allow camera/microphone access, type the text shown, and detection will stop automatically after 30 seconds.</p>
+                </div>
+                
+                <!-- Detection Controls -->
+                <div class="controls">
+                    <button id="start-detection" class="btn-primary">
+                        <i class="fas fa-play"></i> Start Detection
+                    </button>
+                    <div class="timer-display" id="timer-display" style="display: none;">
+                        <i class="fas fa-clock"></i> <span id="timer-text">30</span>s remaining
+                    </div>
+                </div>
+
+                <!-- Detection Status -->
+                <div class="status-grid">
+                    <div class="status-card">
+                        <i class="fas fa-video"></i>
+                        <span id="camera-status">Not Started</span>
+                    </div>
+                    <div class="status-card">
+                        <i class="fas fa-microphone"></i>
+                        <span id="mic-status">Not Started</span>
+                    </div>
+                    <div class="status-card">
+                        <i class="fas fa-keyboard"></i>
+                        <span id="typing-status">Ready</span>
+                    </div>
+                </div>
+
+                <!-- Video and Canvas -->
+                <div class="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+
+                <!-- Typing Speed Test -->
+                <div class="typing-test">
+                    <h3><i class="fas fa-keyboard"></i> Type the text below:</h3>
+                    <p class="typing-prompt" id="typing-prompt">The quick brown fox jumps over the lazy dog. Practice makes perfect when learning to type faster and more accurately.</p>
+                    <textarea id="typing-input" placeholder="Start typing here when detection begins..." disabled></textarea>
+                    <div class="typing-stats">
+                        <span>Speed: <strong id="typing-speed">0</strong> WPM</span>
+                        <span>Accuracy: <strong id="typing-accuracy">0</strong>%</span>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="results" class="results hidden">
+                    <h3>Detection Results</h3>
+                    <div class="result-cards">
+                        <div class="result-card mood">
+                            <i class="fas fa-smile"></i>
+                            <h4>Mood</h4>
+                            <p id="mood-result">-</p>
+                        </div>
+                        <div class="result-card stress">
+                            <i class="fas fa-heartbeat"></i>
+                            <h4>Stress Level</h4>
+                            <p id="stress-result">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommendations -->
+            <div id="recommendations" class="recommendations hidden">
+                <h2>Personalized Recommendations</h2>
+                <div class="recommendation-tabs">
+                    <button class="tab-btn active" data-tab="movies"><i class="fas fa-film"></i> Movies</button>
+                    <button class="tab-btn" data-tab="songs"><i class="fas fa-music"></i> Songs</button>
+                    <button class="tab-btn" data-tab="games"><i class="fas fa-gamepad"></i> Games</button>
+                    <button class="tab-btn" data-tab="jokes"><i class="fas fa-laugh"></i> Jokes & Comedy</button>
+                    <button class="tab-btn" data-tab="exercises"><i class="fas fa-dumbbell"></i> Exercises</button>
+                    <button class="tab-btn" data-tab="activities"><i class="fas fa-hiking"></i> Activities</button>
+                </div>
+
+                <div class="content-grid" id="content-grid">
+                    <!-- Content items will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Music Player -->
+            <div id="music-player" class="music-player hidden">
+                <div class="player-header">
+                    <h3><i class="fas fa-music"></i> Mood Music Player</h3>
+                    <button class="close-player" onclick="toggleMusicPlayer()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="player-content">
+                    <div class="now-playing">
+                        <div class="album-art" id="album-art">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="track-info">
+                            <h4 id="track-title">Select a song to play</h4>
+                            <p id="track-artist">-</p>
+                        </div>
+                    </div>
+                    <div class="player-controls">
+                        <button class="control-btn" onclick="previousTrack()"><i class="fas fa-step-backward"></i></button>
+                        <button class="control-btn play-pause" onclick="togglePlayPause()" id="play-pause-btn">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="control-btn" onclick="nextTrack()"><i class="fas fa-step-forward"></i></button>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                    <div class="playlist" id="playlist">
+                        <!-- Playlist will be populated here -->
+                    </div>
+                </div>
+                <audio id="audio-player" preload="auto"></audio>
+            </div>
+
+            <!-- Dance/Movement Zone -->
+            <div id="dance-zone" class="dance-zone hidden">
+                <div class="dance-header">
+                    <h3><i class="fas fa-running"></i> Movement & Dance Zone</h3>
+                    <button class="close-dance" onclick="toggleDanceZone()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="dance-content">
+                    <div class="movement-tracker">
+                        <video id="dance-video" autoplay playsinline></video>
+                        <canvas id="dance-canvas"></canvas>
+                        <div class="movement-stats">
+                            <div class="stat">
+                                <span>Moves:</span>
+                                <strong id="move-count">0</strong>
+                            </div>
+                            <div class="stat">
+                                <span>Energy:</span>
+                                <strong id="energy-level">0%</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="dance-controls">
+                        <button class="dance-btn" onclick="startDanceMode()">
+                            <i class="fas fa-play"></i> Start Movement
+                        </button>
+                        <button class="dance-btn" onclick="stopDanceMode()">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                    </div>
+                    <div class="dance-visualizer">
+                        <canvas id="visualizer-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="page">
+            <h2>Your Wellness History</h2>
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <h3 id="total-sessions">0</h3>
+                    <p>Total Sessions</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h3 id="avg-stress">0</h3>
+                    <p>Avg Stress Level</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-smile"></i>
+                    <h3 id="avg-mood">-</h3>
+                    <p>Average Mood</p>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>Recent Sessions</h3>
+                <div id="history-list" class="history-list">
+                    <!-- History items will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
